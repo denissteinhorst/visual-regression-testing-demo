@@ -4,12 +4,18 @@ import { ref } from 'vue'
 /**
  * Top navigation. The links are decorative (single-page demo), but the
  * active state is real so tests can assert class changes on interaction.
+ * Test ids live in the data — deriving them in the template proved fragile.
  */
-const navItems = ['Suites', 'Snapshots', 'CI Runs', 'Docs']
-const activeItem = ref('Suites')
+const navItems = [
+  { label: 'Suites', testId: 'nav-suites' },
+  { label: 'Snapshots', testId: 'nav-snapshots' },
+  { label: 'CI Runs', testId: 'nav-ci-runs' },
+  { label: 'Docs', testId: 'nav-docs' },
+]
+const activeItem = ref(navItems[0].label)
 
 const selectItem = (item) => {
-  activeItem.value = item
+  activeItem.value = item.label
 }
 </script>
 
@@ -30,13 +36,13 @@ const selectItem = (item) => {
       <nav class="header__nav" aria-label="Main" data-testid="main-nav">
         <button
           v-for="item in navItems"
-          :key="item"
+          :key="item.label"
           class="header__link"
-          :class="{ 'header__link--active': item === activeItem }"
-          :data-testid="`nav-${item.toLowerCase().replace(' ', '-')}`"
+          :class="{ 'header__link--active': item.label === activeItem }"
+          :data-testid="item.testId"
           @click="selectItem(item)"
         >
-          {{ item }}
+          {{ item.label }}
         </button>
       </nav>
 
@@ -85,12 +91,22 @@ const selectItem = (item) => {
     font-family: var(--font-mono);
     font-size: 0.65rem;
     font-weight: 600;
+
+    /* Phones: the brand name alone is enough. */
+    @media (max-width: 600px) {
+      display: none;
+    }
   }
 
   .header__nav {
     display: flex;
     gap: 0.25rem;
     margin-inline: auto;
+
+    /* Tablet & below: nav collapses first (single-page demo, links are decorative). */
+    @media (max-width: 900px) {
+      display: none;
+    }
   }
 
   .header__link {
@@ -127,6 +143,11 @@ const selectItem = (item) => {
     &:hover {
       border-color: var(--color-accent);
     }
+
+    /* With the nav gone, the badge takes over the right edge. */
+    @media (max-width: 900px) {
+      margin-left: auto;
+    }
   }
 
   .header__action-dot {
@@ -135,23 +156,6 @@ const selectItem = (item) => {
     border-radius: 50%;
     background: var(--color-pass);
     box-shadow: 0 0 0 3px rgb(16 185 129 / 0.15);
-  }
-}
-
-/* Tablet & below: nav collapses first, then the CI badge label. */
-@media (max-width: 900px) {
-  .header .header__nav {
-    display: none;
-  }
-
-  .header .header__action {
-    margin-left: auto;
-  }
-}
-
-@media (max-width: 600px) {
-  .header .header__version {
-    display: none;
   }
 }
 </style>

@@ -5,6 +5,15 @@ regression testing. All tests render inside one Docker image, so there is a
 single source of truth: **baselines come from your local code, comparisons
 always run against prod** — both through the exact same engines.
 
+## Project structure
+
+```
+src/                  the demo page (Vue 3, no runtime deps besides vue)
+tests/                Playwright specs + committed baseline screenshots
+playwright.config.ts  five browser/device projects, prod as default target
+Dockerfile            the single render environment for all test runs
+```
+
 ## Installation
 
 Requires Node 24 (`nvm use 24`) and Docker Desktop.
@@ -21,6 +30,7 @@ npm install
 | `npm run build`          | Static build in `dist/` — upload its contents to the webserver   |
 | `npm run ci:test`        | Compare **prod** against the committed baselines (pipeline gate) |
 | `npm run ci:test:update` | Regenerate the baselines from your **local** code                |
+| `npm run typecheck`      | Type-check the Playwright config and specs (`tsc --noEmit`)     |
 
 Both test commands build the Docker image (cached after the first ~2 GB pull)
 and run every `*.visual.spec.ts` across five projects: `chromium`, `firefox`,
@@ -74,8 +84,9 @@ npm run ci:test
 
 A failing `ci:test` therefore means exactly one of two things: the deploy
 didn't ship what's committed, or the UI changed without re-blessed baselines.
-
-One expectation to set before you try npm run ci:test: it compares prod against these fresh baselines, so it will only go green once you've deployed the current state (npm run build → upload dist/ contents to steinhorst.dev/repos/visual-regression-testing-demo/). If prod is still an older build — or empty — the compare run will correctly fail until then.
+The same rule covers fresh baselines: `ci:test` only goes green once the
+state they were rendered from has been deployed (steps 4–5) — until then the
+compare run correctly fails against the older build on prod.
 
 ## Intentional UI changes
 

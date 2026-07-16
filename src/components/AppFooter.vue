@@ -39,11 +39,20 @@ const links = ['GitHub', 'Changelog', 'License']
     width: min(1200px, 100%);
     margin-inline: auto;
     padding: 0.75rem clamp(1rem, 4vw, 2.5rem);
+
+    @media (max-width: 600px) {
+      justify-content: center;
+    }
   }
 
   .footer__copy {
     color: var(--color-text-muted);
     font-size: 0.75rem;
+
+    /* Phones: keep the footer to a single unobtrusive line. */
+    @media (max-width: 600px) {
+      display: none;
+    }
   }
 
   .footer__nav {
@@ -60,17 +69,6 @@ const links = ['GitHub', 'Changelog', 'License']
     &:hover {
       color: var(--color-accent-strong);
     }
-  }
-}
-
-/* Phones: keep the footer to a single unobtrusive line. */
-@media (max-width: 600px) {
-  .footer .footer__copy {
-    display: none;
-  }
-
-  .footer .footer__inner {
-    justify-content: center;
   }
 }
 </style>

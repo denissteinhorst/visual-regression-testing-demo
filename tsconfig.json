@@ -1,0 +1,14 @@
+{
+  // Scoped to the TypeScript surface of the project: the Playwright config
+  // and the test specs. The Vue app itself is plain JS and stays out.
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "types": ["node"]
+  },
+  "include": ["playwright.config.ts", "tests/**/*.ts"]
+}

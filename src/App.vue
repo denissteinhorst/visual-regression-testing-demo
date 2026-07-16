@@ -1,12 +1,19 @@
 <script setup>
 /**
  * App shell — owns the viewport-locked layout (header / hero+runner / footer).
- * Intentionally stateless: all interactivity lives in the leaf components,
- * which keeps this file a pure composition root.
+ * Intentionally near-stateless: all interactivity lives in the leaf
+ * components, which keeps this file a pure composition root.
  */
 import AppHeader from './components/AppHeader.vue'
 import TestRunner from './components/TestRunner.vue'
 import AppFooter from './components/AppFooter.vue'
+
+// Hero key figures — data-driven like every other list on the page.
+const heroFacts = [
+  { value: '3', label: 'browsers' },
+  { value: '0.1s', label: 'avg. spec' },
+  { value: '100%', label: 'deterministic' },
+]
 </script>
 
 <template>
@@ -38,9 +45,10 @@ import AppFooter from './components/AppFooter.vue'
         </div>
 
         <ul class="hero__facts" data-testid="hero-facts">
-          <li class="hero__fact"><strong>3</strong><span>browsers</span></li>
-          <li class="hero__fact"><strong>0.1s</strong><span>avg. spec</span></li>
-          <li class="hero__fact"><strong>100%</strong><span>deterministic</span></li>
+          <li v-for="fact in heroFacts" :key="fact.label" class="hero__fact">
+            <strong>{{ fact.value }}</strong>
+            <span>{{ fact.label }}</span>
+          </li>
         </ul>
       </section>
 
@@ -78,6 +86,14 @@ import AppFooter from './components/AppFooter.vue'
     margin-inline: auto;
     padding-inline: clamp(1rem, 4vw, 2.5rem);
     min-height: 0; /* allow the 1fr row to shrink instead of overflowing */
+
+    /* Tablet: stack the columns, center the copy, stay inside 100vh. */
+    @media (max-width: 900px) {
+      grid-template-columns: 1fr;
+      align-content: center;
+      gap: 1.5rem;
+      text-align: center;
+    }
   }
 
   .app__stage {
@@ -119,6 +135,10 @@ import AppFooter from './components/AppFooter.vue'
     color: var(--color-text-muted);
     font-size: clamp(0.9rem, 1.4vw, 1.05rem);
     line-height: 1.6;
+
+    @media (max-width: 900px) {
+      margin-inline: auto;
+    }
   }
 
   .hero__actions {
@@ -126,6 +146,15 @@ import AppFooter from './components/AppFooter.vue'
     flex-wrap: wrap;
     gap: 0.75rem;
     margin-top: 1.5rem;
+
+    @media (max-width: 900px) {
+      justify-content: center;
+    }
+
+    /* Phones & short viewports: tighten up to guarantee no scroll. */
+    @media (max-width: 600px), (max-height: 700px) and (max-width: 900px) {
+      margin-top: 1rem;
+    }
   }
 
   .hero__cta {
@@ -164,6 +193,15 @@ import AppFooter from './components/AppFooter.vue'
     margin-top: 2rem;
     padding: 0;
     list-style: none;
+
+    @media (max-width: 900px) {
+      justify-content: center;
+    }
+
+    /* Phones & short viewports: secondary content yields to the no-scroll rule. */
+    @media (max-width: 600px), (max-height: 700px) and (max-width: 900px) {
+      display: none;
+    }
   }
 
   .hero__fact {
@@ -177,36 +215,6 @@ import AppFooter from './components/AppFooter.vue'
       color: var(--color-text);
       letter-spacing: -0.01em;
     }
-  }
-}
-
-/* Tablet: stack the columns, center the copy, keep everything inside 100vh. */
-@media (max-width: 900px) {
-  .app .app__main {
-    grid-template-columns: 1fr;
-    align-content: center;
-    gap: 1.5rem;
-    text-align: center;
-  }
-
-  .hero .hero__lead {
-    margin-inline: auto;
-  }
-
-  .hero .hero__actions,
-  .hero .hero__facts {
-    justify-content: center;
-  }
-}
-
-/* Phones & short viewports: drop secondary hero content to guarantee no scroll. */
-@media (max-width: 600px), (max-height: 700px) and (max-width: 900px) {
-  .hero .hero__facts {
-    display: none;
-  }
-
-  .hero .hero__actions {
-    margin-top: 1rem;
   }
 }
 </style>

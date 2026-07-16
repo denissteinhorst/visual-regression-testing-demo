@@ -10,7 +10,35 @@ import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
  * interval so the run feels alive while replaying identically every time.
  */
 
-/** @type {const} spec fixtures — `passes` scripts the outcome per run */
+/**
+ * @typedef {object} Spec
+ * @property {number} id stable key for list rendering
+ * @property {string} name displayed spec title
+ * @property {number} ms fixed fake duration, summed in the summary bar
+ * @property {boolean} passes scripted outcome — identical on every run
+ * @property {string} status one of STATUS, advances during the replay
+ */
+
+// The runner's states; the values double as BEM modifiers and filter ids.
+const STATUS = Object.freeze({
+  IDLE: 'idle',
+  RUNNING: 'running',
+  PASSED: 'passed',
+  FAILED: 'failed',
+})
+
+// Options of the filter pill group ('all' shows every spec).
+const FILTERS = ['all', STATUS.PASSED, STATUS.FAILED]
+
+/** Presentation lookup — keeps the template free of nested ternaries. */
+const STATUS_GLYPHS = {
+  [STATUS.IDLE]: '·',
+  [STATUS.RUNNING]: '◌',
+  [STATUS.PASSED]: '✓',
+  [STATUS.FAILED]: '✕',
+}
+
+// Fixtures for the scripted replay — `passes` scripts each spec's outcome.
 const SPEC_FIXTURES = [
   { id: 1, name: 'header.spec.ts › shows CI badge', ms: 84, passes: true },
   { id: 2, name: 'nav.spec.ts › highlights active link', ms: 112, passes: true },
@@ -19,10 +47,12 @@ const SPEC_FIXTURES = [
   { id: 5, name: 'footer.spec.ts › links are visible', ms: 67, passes: true },
 ]
 
-const STEP_MS = 450 // pacing between spec results — slow enough to watch
+// Pacing between spec results — slow enough to watch.
+const STEP_MS = 450
 
-const specs = ref(SPEC_FIXTURES.map((spec) => ({ ...spec, status: 'idle' })))
-const runState = ref('idle') // idle → running → done
+/** @type {import('vue').Ref<Spec[]>} */
+const specs = ref(SPEC_FIXTURES.map((spec) => ({ ...spec, status: STATUS.IDLE })))
+const isRunning = ref(false)
 const filter = ref('all')
 
 let timer = null
@@ -34,14 +64,19 @@ const visibleSpecs = computed(() =>
     : specs.value.filter((spec) => spec.status === filter.value)
 )
 
-/** Aggregates for the summary bar — derived, never stored. */
-const stats = computed(() => ({
-  passed: specs.value.filter((spec) => spec.status === 'passed').length,
-  failed: specs.value.filter((spec) => spec.status === 'failed').length,
-  totalMs: specs.value
-    .filter((spec) => spec.status !== 'idle' && spec.status !== 'running')
-    .reduce((sum, spec) => sum + spec.ms, 0),
-}))
+/** Aggregates for the summary bar — derived in a single pass, never stored. */
+const stats = computed(() =>
+  specs.value.reduce(
+    (acc, spec) => {
+      if (spec.status === STATUS.PASSED || spec.status === STATUS.FAILED) {
+        acc[spec.status] += 1
+        acc.totalMs += spec.ms
+      }
+      return acc
+    },
+    { passed: 0, failed: 0, totalMs: 0 }
+  )
+)
 
 const progress = computed(() => {
   const settled = stats.value.passed + stats.value.failed
@@ -56,23 +91,25 @@ const stopTimer = () => {
 /** Replays the scripted run: one spec settles per tick. */
 const runSuite = () => {
   stopTimer()
-  specs.value.forEach((spec) => (spec.status = 'idle'))
+  for (const spec of specs.value) {
+    spec.status = STATUS.IDLE
+  }
   filter.value = 'all'
-  runState.value = 'running'
+  isRunning.value = true
 
   let cursor = 0
-  specs.value[cursor].status = 'running'
+  specs.value[cursor].status = STATUS.RUNNING
 
   timer = setInterval(() => {
     const current = specs.value[cursor]
-    current.status = current.passes ? 'passed' : 'failed'
+    current.status = current.passes ? STATUS.PASSED : STATUS.FAILED
 
     cursor += 1
     if (cursor < specs.value.length) {
-      specs.value[cursor].status = 'running'
+      specs.value[cursor].status = STATUS.RUNNING
     } else {
       stopTimer()
-      runState.value = 'done'
+      isRunning.value = false
     }
   }, STEP_MS)
 }
@@ -85,9 +122,6 @@ const setFilter = (value) => {
 onMounted(runSuite)
 // …and never leak the interval if the component unmounts mid-run.
 onBeforeUnmount(stopTimer)
-
-/** Presentation lookup — keeps the template free of nested ternaries. */
-const STATUS_GLYPHS = { idle: '·', running: '◌', passed: '✓', failed: '✕' }
 </script>
 
 <template>
@@ -110,10 +144,11 @@ const STATUS_GLYPHS = { idle: '·', running: '◌', passed: '✓', failed: '✕'
     <div class="runner__toolbar">
       <div class="runner__filters" role="group" aria-label="Filter specs">
         <button
-          v-for="value in ['all', 'passed', 'failed']"
+          v-for="value in FILTERS"
           :key="value"
           class="runner__filter"
           :class="{ 'runner__filter--active': filter === value }"
+          :aria-pressed="filter === value"
           :data-testid="`filter-${value}`"
           @click="setFilter(value)"
         >
@@ -123,11 +158,11 @@ const STATUS_GLYPHS = { idle: '·', running: '◌', passed: '✓', failed: '✕'
 
       <button
         class="runner__run"
-        :disabled="runState === 'running'"
+        :disabled="isRunning"
         data-testid="run-button"
         @click="runSuite"
       >
-        {{ runState === 'running' ? 'Running…' : 'Run tests' }}
+        {{ isRunning ? 'Running…' : 'Run tests' }}
       </button>
     </div>
 
@@ -153,7 +188,7 @@ const STATUS_GLYPHS = { idle: '·', running: '◌', passed: '✓', failed: '✕'
       </li>
     </ul>
 
-    <div class="runner__summary" data-testid="summary">
+    <div class="runner__summary" aria-live="polite" data-testid="summary">
       <span class="runner__stat runner__stat--pass">{{ stats.passed }} passed</span>
       <span class="runner__stat runner__stat--fail">{{ stats.failed }} failed</span>
       <span class="runner__stat">{{ stats.totalMs }}ms total</span>
@@ -200,6 +235,11 @@ const STATUS_GLYPHS = { idle: '·', running: '◌', passed: '✓', failed: '✕'
     font-size: 0.72rem;
     white-space: nowrap;
     text-overflow: ellipsis;
+
+    /* Phones: the badge matters more than the command line. */
+    @media (max-width: 600px) {
+      display: none;
+    }
   }
 
   /* Amber "not real" flag — deliberately loud so the mock is never mistaken
@@ -303,6 +343,11 @@ const STATUS_GLYPHS = { idle: '·', running: '◌', passed: '✓', failed: '✕'
     padding: 0.45rem 1rem;
     transition: background-color 0.15s ease;
 
+    /* Phones: tighter rows so the card never pushes past the viewport. */
+    @media (max-width: 600px) {
+      padding-block: 0.35rem;
+    }
+
     &.runner__spec--running {
       background: var(--color-accent-soft);
 
@@ -363,6 +408,11 @@ const STATUS_GLYPHS = { idle: '·', running: '◌', passed: '✓', failed: '✕'
     &.runner__stat--note {
       margin-left: auto;
       font-style: italic;
+
+      /* Phones: the pass/fail counts are the essential information. */
+      @media (max-width: 600px) {
+        display: none;
+      }
     }
   }
 }
@@ -370,18 +420,6 @@ const STATUS_GLYPHS = { idle: '·', running: '◌', passed: '✓', failed: '✕'
 @keyframes runner-spin {
   to {
     transform: rotate(360deg);
-  }
-}
-
-/* Phones: tighten paddings so the card never pushes past the viewport. */
-@media (max-width: 600px) {
-  .runner .runner__cmd,
-  .runner .runner__stat--note {
-    display: none;
-  }
-
-  .runner .runner__spec {
-    padding-block: 0.35rem;
   }
 }
 </style>

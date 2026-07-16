@@ -69,13 +69,19 @@ const targets: VisualTestTarget[] = [
 const baselineName = ({ name, characteristic }: VisualTestTarget): string =>
   `${name}--${characteristic}`.toLowerCase().replace(/[^a-z0-9-]+/g, '-') + '.png'
 
+// Upper bound for the mock suite's mount replay (5 specs × STEP_MS in
+// TestRunner.vue ≈ 2.5s) — sized generously; adjust if the pacing changes.
+const SUITE_REPLAY_TIMEOUT_MS = 10_000
+
 test.describe('maximum expression', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('./')
 
-    // The runner replays its scripted suite on mount (~2.5s). Wait for the
-    // run button to re-enable — the page is only deterministic after that.
-    await expect(page.getByTestId('run-button')).toBeEnabled({ timeout: 10_000 })
+    // The runner replays its scripted suite on mount. Wait for the run
+    // button to re-enable — the page is only deterministic after that.
+    await expect(page.getByTestId('run-button')).toBeEnabled({
+      timeout: SUITE_REPLAY_TIMEOUT_MS,
+    })
   })
 
   // One dedicated test case per target — declared at load time, so each shows

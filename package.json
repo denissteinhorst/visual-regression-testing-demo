@@ -6,8 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "ci:test": "docker build -t vrt-runner . && docker run --rm --ipc=host -v \"$(pwd)/playwright-report:/app/playwright-report\" vrt-runner",
-    "ci:test:update": "docker build -t vrt-runner . && docker run --rm --ipc=host -e BASE_URL=http://host.docker.internal:5173/ -v \"$(pwd)/tests:/app/tests\" vrt-runner npx playwright test --update-snapshots"
+    "typecheck": "tsc --noEmit",
+    "docker:build": "docker build -t vrt-runner .",
+    "ci:test": "npm run docker:build && docker run --rm --ipc=host -v \"$(pwd)/playwright-report:/app/playwright-report\" vrt-runner",
+    "ci:test:update": "npm run docker:build && docker run --rm --ipc=host -e BASE_URL=http://host.docker.internal:5173/ -v \"$(pwd)/tests:/app/tests\" vrt-runner npx playwright test --update-snapshots"
   },
   "dependencies": {
     "vue": "^3.5.13"
@@ -16,6 +18,7 @@
     "@playwright/test": "^1.61.1",
     "@types/node": "^26.1.1",
     "@vitejs/plugin-vue": "^5.2.1",
+    "typescript": "^7.0.2",
     "vite": "^6.0.5"
   }
 }

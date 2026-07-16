@@ -20,8 +20,10 @@ export default defineConfig({
   snapshotPathTemplate: '{testDir}/__screenshots__/{projectName}/{arg}{ext}',
   // Specs are independent, so parallel workers are safe.
   fullyParallel: true,
-  // One retry absorbs the odd rendering hiccup without hiding real diffs.
-  retries: 1,
+  // The page is deterministic and animations are frozen, so a diff is a
+  // diff — no retries locally. In the container (CI=1) one retry absorbs
+  // network flake against the live prod site.
+  retries: process.env.CI ? 1 : 0,
   // Line output for logs, plus an HTML report with the visual diffs —
   // the report folder is the artifact to archive in the pipeline step.
   reporter: [['line'], ['html', { open: 'never' }]],
