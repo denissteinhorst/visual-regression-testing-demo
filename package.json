@@ -6,9 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "ci:test:local": "playwright test",
-    "ci:test:update": "playwright test --update-snapshots",
-    "ci:test:prod": "TEST_ENV=prod playwright test"
+    "ci:test": "docker build -t vrt-runner . && docker run --rm --ipc=host -v \"$(pwd)/playwright-report:/app/playwright-report\" vrt-runner",
+    "ci:test:update": "docker build -t vrt-runner . && docker run --rm --ipc=host -e BASE_URL=http://host.docker.internal:5173/ -v \"$(pwd)/tests:/app/tests\" vrt-runner npx playwright test --update-snapshots"
   },
   "dependencies": {
     "vue": "^3.5.13"

@@ -1,0 +1,8 @@
+# Keep the build context minimal — the image only needs package files,
+# the Playwright config, and tests/ (see Dockerfile COPY directives).
+node_modules
+dist
+test-results
+playwright-report
+.git
+.DS_Store
