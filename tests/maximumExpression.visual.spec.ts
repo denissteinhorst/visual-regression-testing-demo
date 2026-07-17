@@ -66,8 +66,11 @@ const targets: VisualTestTarget[] = [
 ]
 
 /** "TestRunner" + "filter-passed" → "testrunner--filter-passed.png" */
-const baselineName = ({ name, characteristic }: VisualTestTarget): string =>
-  `${name}--${characteristic}`.toLowerCase().replace(/[^a-z0-9-]+/g, '-') + '.png'
+const baselineName = (
+  { name, characteristic }: VisualTestTarget,
+  suffix = '',
+): string =>
+  `${name}--${characteristic}${suffix}`.toLowerCase().replace(/[^a-z0-9-]+/g, '-') + '.png'
 
 // Upper bound for the mock suite's mount replay (5 specs × STEP_MS in
 // TestRunner.vue ≈ 2.5s) — sized generously; adjust if the pacing changes.
@@ -90,6 +93,12 @@ test.describe('maximum expression', () => {
     test(`${target.name} — ${target.characteristic}`, async ({ page }) => {
       if (target.clickBefore) {
         await page.locator(target.clickBefore).click()
+
+        // Capture the whole page right after the click, so the variant's
+        // effect on the surrounding layout is covered too.
+        await expect(page).toHaveScreenshot(baselineName(target, '--full-page'), {
+          fullPage: true,
+        })
       }
 
       const component = page.locator(target.selector)

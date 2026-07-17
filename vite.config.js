@@ -10,5 +10,12 @@ export default defineConfig({
     // The Docker baseline run (npm run ci:test:update) reaches this dev
     // server from inside the container under this hostname.
     allowedHosts: ['host.docker.internal'],
+    // Pre-transform the app's module graph on server start. Without this,
+    // the first Docker test run hits cold on-demand transforms — slow module
+    // responses under 8 parallel workers are what make WebKit's page.goto
+    // occasionally cancel ("flaky" first attempts).
+    warmup: {
+      clientFiles: ['./src/main.js', './src/App.vue', './src/components/*.vue'],
+    },
   },
 })
