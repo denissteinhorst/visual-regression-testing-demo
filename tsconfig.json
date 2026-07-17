@@ -8,7 +8,9 @@
     "strict": true,
     "noEmit": true,
     "skipLibCheck": true,
-    "types": ["node"]
+    "types": ["node"],
+    // scripts/ runs via Node's native type stripping — ban non-erasable syntax.
+    "erasableSyntaxOnly": true
   },
-  "include": ["playwright.config.ts", "tests/**/*.ts"]
+  "include": ["playwright.config.ts", "tests/**/*.ts", "scripts/**/*.ts"]
 }

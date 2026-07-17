@@ -31,6 +31,7 @@ npm install
 | `npm run ci:test`        | Compare **prod** against the committed baselines (pipeline gate) |
 | `npm run ci:test:update` | Regenerate the baselines from your **local** code                |
 | `npm run typecheck`      | Type-check the Playwright config and specs (`tsc --noEmit`)     |
+| `npm run report:pdf`     | Print the HTML report to `playwright-report/report_<TT.MM.JJJJ>_<hh-mm>.pdf` (A4) — runs automatically after `ci:test` |
 
 Both test commands build the Docker image (cached after the first ~2 GB pull)
 and run every `*.visual.spec.ts` across five projects: `chromium`, `firefox`,

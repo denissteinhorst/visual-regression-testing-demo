@@ -8,8 +8,9 @@
     "build": "vite build",
     "typecheck": "tsc --noEmit",
     "docker:build": "docker build -t vrt-runner .",
-    "ci:test": "npm run docker:build && docker run --rm --ipc=host -v \"$(pwd)/playwright-report:/app/playwright-report\" vrt-runner",
-    "ci:test:update": "npm run docker:build && (curl -sf -o /dev/null http://localhost:5173/ || (echo 'Dev server not reachable on :5173 — start it first: npm run dev' && exit 1)) && docker run --rm --ipc=host -e BASE_URL=http://host.docker.internal:5173/ -v \"$(pwd)/tests:/app/tests\" vrt-runner npx playwright test --update-snapshots"
+    "ci:test": "npm run docker:build && (docker run --rm --ipc=host -v \"$(pwd)/playwright-report:/app/playwright-report\" vrt-runner; ret=$?; npm run report:pdf && exit $ret)",
+    "ci:test:update": "npm run docker:build && (curl -sf -o /dev/null http://localhost:5173/ || (echo 'Dev server not reachable on :5173 — start it first: npm run dev' && exit 1)) && docker run --rm --ipc=host -e BASE_URL=http://host.docker.internal:5173/ -v \"$(pwd)/tests:/app/tests\" vrt-runner npx playwright test --update-snapshots",
+    "report:pdf": "node scripts/export-report-pdf.ts"
   },
   "dependencies": {
     "vue": "^3.5.13"
