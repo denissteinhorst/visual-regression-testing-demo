@@ -40,7 +40,26 @@ and run every `*.visual.spec.ts` across five projects: `chromium`, `firefox`,
 
 ## Technical behaviour
 
-The two test commands move the baselines in opposite directions:
+**Getting the project into the image.** The Dockerfile copies
+`package.json`/`package-lock.json` first and runs `npm ci` on its own layer,
+then copies in `playwright.config.ts` and the whole `tests/` folder — specs
+and committed baselines both. That ordering means editing a spec or a
+baseline only busts the cheap final layer; `npm ci` is never repeated just
+because a test changed, which is why both commands can afford to rebuild the
+image on every run. The image is fully self-contained once built: it carries
+its own copy of the test code, it doesn't read from the host unless a volume
+is explicitly mounted.
+
+**Matching screenshots to the right browser.** `snapshotPathTemplate` in
+`playwright.config.ts` places each baseline at
+`tests/__screenshots__/<projectName>/<name>.png`, so `chromium`, `firefox`,
+`safari`, `ipad`, and `iphone` each get their own independent baseline set — a
+Chromium render is never diffed against a WebKit baseline. During `ci:test`,
+Playwright screenshots the running target and pixel-compares it against the
+baseline at that path; any mismatch writes an actual/expected/diff triptych
+into `playwright-report/`.
+
+The two test commands then move those baselines in opposite directions:
 
 - **`ci:test:update` — live mount, results flow _out_.** The script mounts the
   repo's `./tests` folder into the container (`-v $(pwd)/tests:/app/tests`).
